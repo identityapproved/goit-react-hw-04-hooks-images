@@ -4,76 +4,73 @@ import { ImageGallery } from 'Components/ImageGalleryList/ImageGalleryList';
 import OnLoading from 'Components/Loader/Loader';
 import Modal from 'Components/Modal/Modal';
 import SearchBar from 'Components/SearchBar/SearchBar';
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default class App extends Component {
-  state = {
-    images: [],
-    query: '',
-    page: 1,
-    isLoading: false,
-    largeImage: '',
-    showModal: false,
-  };
+export default function App() {
+  const [images, setImages] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [largeImage, setLargeImage] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.query !== this.state.query) {
-      this.fetchImages();
+  useEffect(() => {
+    if (query === '') {
+      return;
     }
-  }
 
-  fetchImages = () => {
-    const { query, page } = this.state;
-    this.setState({ isLoading: true });
-    return fetchImages(query, page)
+    if (page === 1) {
+      setImages([]);
+    }
+
+    setIsLoading(true);
+
+    fetchImages(query, page)
       .then(data => {
-        this.setState(({ images, page }) => ({
-          images: [...images, ...data],
-          page: page + 1,
-          isLoading: false,
-        }));
+        setImages(prev => [...prev, ...data]);
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+          behavior: 'smooth',
+        });
       })
-      .finally(() => this.scrollTo());
+      .finally(setIsLoading(false));
+  }, [page, query]);
+
+  const onInputChange = query => {
+    setQuery(query.toLowerCase());
+    setPage(1);
+    // this.setState({ images: [], query: query, page: 1 });
   };
 
-  onInputChange = query => {
-    this.setState({ images: [], query: query, page: 1 });
+  const onImageClick = largeImageUrl => {
+    setLargeImage(largeImageUrl);
+    setShowModal(prev => !prev);
   };
 
-  onImageClick = largeImageUrl => {
-    this.setState({ largeImage: largeImageUrl, showModal: true });
-  };
+  return (
+    <>
+      <SearchBar onSubmit={onInputChange}></SearchBar>
 
-  scrollTo = () => {
-    window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: 'smooth',
-    });
-  };
+      <ImageGallery images={images} onImageClick={onImageClick} />
 
-  loadMore = () => {
-    this.fetchImages(this.state.query);
-  };
+      {isLoading && <OnLoading />}
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
-  };
+      {images.length > 0 && (
+        <LoadMoreBtn
+          onClick={() => {
+            setPage(prev => prev + 1);
+          }}
+        />
+      )}
 
-  render() {
-    return (
-      <>
-        <SearchBar onSubmit={this.onInputChange}></SearchBar>
-
-        <ImageGallery images={this.state.images} onImageClick={this.onImageClick} />
-
-        {this.state.isLoading && <OnLoading />}
-
-        {this.state.images.length > 0 && <LoadMoreBtn onClick={this.loadMore} />}
-
-        {this.state.showModal && (
-          <Modal toggleModal={this.toggleModal} url={this.state.largeImage} />
-        )}
-      </>
-    );
-  }
+      {showModal && (
+        <Modal
+          toggleModal={() => {
+            setShowModal(prev => !prev);
+          }}
+          url={largeImage}
+        />
+      )}
+    </>
+  );
 }

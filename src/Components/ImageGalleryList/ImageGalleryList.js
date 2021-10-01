@@ -5,9 +5,9 @@ import { ImageGalleryList } from './ImageGalleryList.styled';
 export const ImageGallery = ({ images, onImageClick }) => {
   return (
     <ImageGalleryList>
-      {images.map(({ id, webformatURL, largeImageURL, tags }) => (
+      {images.map(({ webformatURL, largeImageURL, tags }) => (
         <ImageGalleryItems
-          key={id}
+          key={webformatURL}
           webFormatUrl={webformatURL}
           largeImageUrl={largeImageURL}
           tags={tags}
